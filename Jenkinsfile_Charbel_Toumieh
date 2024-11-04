@@ -52,32 +52,33 @@ pipeline {
         }
         
         stage('Coverage Analysis') {
-            steps {
-                script {
-                    bat """
-                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage run -m pytest
-                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage report
-                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage html
-                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage xml
-                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage-badge -o coverage-badge.svg
-                    """
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'htmlcov/**, coverage.xml, coverage-badge.svg', fingerprint: true
-                    publishHTML([ 
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'htmlcov',
-                        reportFiles: 'index.html',
-                        reportName: 'Coverage Report',
-                        reportTitles: ''
-                    ])
-                }
-            }
-        }
+			steps {
+				script {
+					bat """
+						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage run -m pytest
+						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage report
+						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage html
+						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage xml
+						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m anybadge -l "coverage" -v "$(C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage report | find "TOTAL" | awk '{print $4}')" -c "green" -o coverage-badge.svg
+					"""
+				}
+			}
+			post {
+				always {
+					archiveArtifacts artifacts: 'htmlcov/**, coverage.xml, coverage-badge.svg', fingerprint: true
+					publishHTML([ 
+						allowMissing: false,
+						alwaysLinkToLastBuild: true,
+						keepAll: true,
+						reportDir: 'htmlcov',
+						reportFiles: 'index.html',
+						reportName: 'Coverage Report',
+						reportTitles: ''
+					])
+				}
+			}
+		}
+
         
         stage('Deploy') {
             steps {
