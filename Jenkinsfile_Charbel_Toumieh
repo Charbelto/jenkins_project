@@ -5,21 +5,21 @@ pipeline {
             steps {
                 script {
                     // Install dependencies directly without a virtual environment
-                    sh "pip install -r requirements.txt"
+                    bat "pip install -r requirements.txt"
                 }
             }
         }
         stage('Lint') {
             steps {
                 script {
-                    sh "flake8 app.py"
+                    bat "flake8 app.py"
                 }
             }
         }
         stage('Test') {
             steps {
                 script {
-                    sh "pytest"
+                    bat "pytest"
                 }
             }
         }
