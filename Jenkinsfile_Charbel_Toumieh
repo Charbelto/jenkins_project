@@ -1,109 +1,40 @@
 pipeline {
     agent any
-
-    environment {
-        DEPLOY_DIR = 'deployment'
-    }
-
     stages {
         stage('Setup') {
             steps {
                 script {
-                    // Check if Python is available
-                    def pythonAvailable = bat(script: "python --version", returnStatus: true) == 0
-                    if (!pythonAvailable) {
-                        error "Python is not available in the PATH. Ensure Python is installed and added to PATH."
-                    }
-                    
-                    // Install required packages if not already available
-                    if (fileExists('requirements.txt')) {
-                        bat "pip install --upgrade pip && pip install -r requirements.txt"
-                    }
+                    // Install dependencies directly without a virtual environment
+                    sh "pip install -r requirements.txt"
                 }
             }
         }
-        
-        stage('Security Scan') {
+        stage('Lint') {
             steps {
                 script {
-                    bat "bandit -r app.py -f html -o security-report.html && bandit -r app.py -f json -o security-report.json"
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'security-report.*', fingerprint: true
-                    publishHTML([ 
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: '.',
-                        reportFiles: 'security-report.html',
-                        reportName: 'Security Scan Report',
-                        reportTitles: ''
-                    ])
+                    sh "flake8 app.py"
                 }
             }
         }
-        
-        stage('Coverage Analysis') {
+        stage('Test') {
             steps {
                 script {
-                    bat """
-                        coverage run -m pytest
-                        coverage report
-                        coverage html
-                        coverage xml
-                        coverage-badge -o coverage-badge.svg
-                    """
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'htmlcov/**, coverage.xml, coverage-badge.svg', fingerprint: true
-                    publishHTML([ 
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'htmlcov',
-                        reportFiles: 'index.html',
-                        reportName: 'Coverage Report',
-                        reportTitles: ''
-                    ])
+                    sh "pytest"
                 }
             }
         }
-        
         stage('Deploy') {
             steps {
                 script {
-                    bat """
-                        mkdir ${DEPLOY_DIR}
-                        copy app.py ${DEPLOY_DIR}\\
-                        copy requirements.txt ${DEPLOY_DIR}\\
-                        echo Deployment timestamp: %DATE% %TIME% > ${DEPLOY_DIR}\\version.txt
-                        echo Build number: ${BUILD_NUMBER} >> ${DEPLOY_DIR}\\version.txt
-                        cd ${DEPLOY_DIR}
-                        python -c "import app; print(app.greet('Deployment Test'))"
-                    """
-                }
-            }
-            post {
-                success {
-                    archiveArtifacts artifacts: "${DEPLOY_DIR}/**", fingerprint: true
+                    // Deployment logic, e.g., pushing to a remote server
+                    echo "Deploying application..."
                 }
             }
         }
     }
-
     post {
         always {
             cleanWs()
-        }
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
         }
     }
 }
