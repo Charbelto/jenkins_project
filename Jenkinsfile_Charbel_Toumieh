@@ -52,35 +52,42 @@ pipeline {
         }
         
         stage('Coverage Analysis') {
-			steps {
-				script {
-					bat '''
-						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage run -m pytest
-						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage report
-						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage html
-						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage xml
-						C:\\Users\\Admin\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.10_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python310\\Scripts\\anybadge.exe -l "coverage" -v "$(C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage report | find "TOTAL" | awk \'{print $4}\')" -c "green" -o coverage-badge.svg
+            steps {
+                script {
+                    // Run tests and generate coverage report
+                    bat '''
+                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage run -m pytest
+                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage report > coverage.txt
+                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage html
+                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage xml
+                    '''
+                    
+                    // Read the coverage percentage from the report
+                    def coverageOutput = bat(script: "findstr /C:\"TOTAL\" coverage.txt", returnStdout: true).trim()
+                    def coverageValue = coverageOutput.split().last()
 
-					'''
-				}
-			}
-			post {
-				always {
-					archiveArtifacts artifacts: 'htmlcov/**, coverage.xml, coverage-badge.svg', fingerprint: true
-					publishHTML([ 
-						allowMissing: false,
-						alwaysLinkToLastBuild: true,
-						keepAll: true,
-						reportDir: 'htmlcov',
-						reportFiles: 'index.html',
-						reportName: 'Coverage Report',
-						reportTitles: ''
-					])
-				}
-			}
-		}
+                    // Generate the coverage badge
+                    bat """
+                        C:\\Users\\Admin\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.10_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python310\\Scripts\\anybadge.exe -l "coverage" -v ${coverageValue} -c "green" -o coverage-badge.svg
+                    """
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'htmlcov/**, coverage.xml, coverage-badge.svg', fingerprint: true
+                    publishHTML([ 
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'htmlcov',
+                        reportFiles: 'index.html',
+                        reportName: 'Coverage Report',
+                        reportTitles: ''
+                    ])
+                }
+            }
+        }
 
-        
         stage('Deploy') {
             steps {
                 script {
