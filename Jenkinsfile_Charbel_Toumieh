@@ -54,13 +54,13 @@ pipeline {
         stage('Coverage Analysis') {
 			steps {
 				script {
-					bat """
+					bat '''
 						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage run -m pytest
 						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage report
 						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage html
 						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage xml
 						C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m anybadge -l "coverage" -v "$(C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage report | find "TOTAL" | awk '{print $4}')" -c "green" -o coverage-badge.svg
-					"""
+					'''
 				}
 			}
 			post {
