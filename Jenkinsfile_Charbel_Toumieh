@@ -19,7 +19,11 @@ pipeline {
                     
                     // Install required packages if not already available
                     if (fileExists('requirements.txt')) {
-                        bat "C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m pip install --upgrade pip && C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m pip install -r requirements.txt"
+                        bat """
+                            C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m pip install --upgrade pip
+                            C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m pip install -r requirements.txt
+                            C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m pip install --no-warn-script-location coverage-badge
+                        """
                     }
                 }
             }
