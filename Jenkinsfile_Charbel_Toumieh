@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         DEPLOY_DIR = 'deployment'
-        PYTHON_PATH = 'C:\\Users\\Admin\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe'
     }
 
     stages {
@@ -11,14 +10,14 @@ pipeline {
             steps {
                 script {
                     // Check if Python is available
-                    def pythonAvailable = bat(script: "${PYTHON_PATH} --version", returnStatus: true) == 0
+                    def pythonAvailable = bat(script: "python --version", returnStatus: true) == 0
                     if (!pythonAvailable) {
-                        error "Python is not available at the specified path: ${PYTHON_PATH}. Ensure Python is installed."
+                        error "Python is not available in the PATH. Ensure Python is installed and added to PATH."
                     }
                     
                     // Install required packages if not already available
                     if (fileExists('requirements.txt')) {
-                        bat "${PYTHON_PATH} -m pip install --upgrade pip && ${PYTHON_PATH} -m pip install -r requirements.txt"
+                        bat "pip install --upgrade pip && pip install -r requirements.txt"
                     }
                 }
             }
@@ -50,11 +49,11 @@ pipeline {
             steps {
                 script {
                     bat """
-                        ${PYTHON_PATH} -m coverage run -m pytest
-                        ${PYTHON_PATH} -m coverage report
-                        ${PYTHON_PATH} -m coverage html
-                        ${PYTHON_PATH} -m coverage xml
-                        ${PYTHON_PATH} -m coverage-badge -o coverage-badge.svg
+                        coverage run -m pytest
+                        coverage report
+                        coverage html
+                        coverage xml
+                        coverage-badge -o coverage-badge.svg
                     """
                 }
             }
@@ -84,7 +83,7 @@ pipeline {
                         echo Deployment timestamp: %DATE% %TIME% > ${DEPLOY_DIR}\\version.txt
                         echo Build number: ${BUILD_NUMBER} >> ${DEPLOY_DIR}\\version.txt
                         cd ${DEPLOY_DIR}
-                        ${PYTHON_PATH} -c "import app; print(app.greet('Deployment Test'))"
+                        python -c "import app; print(app.greet('Deployment Test'))"
                     """
                 }
             }
