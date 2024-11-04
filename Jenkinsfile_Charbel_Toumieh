@@ -2,6 +2,7 @@ pipeline {
     agent any
     
     environment {
+        PYTHON_PATH = 'C:\\Path\\To\\Python\\python.exe' // Update this with your Python path
         VIRTUAL_ENV = 'venv'
         DEPLOY_DIR = 'deployment'
     }
@@ -13,14 +14,14 @@ pipeline {
                     if (!fileExists("${env.WORKSPACE}/${VIRTUAL_ENV}")) {
                         if (isUnix()) {
                             sh """
-                                python -m venv ${VIRTUAL_ENV}
+                                ${PYTHON_PATH} -m venv ${VIRTUAL_ENV}
                                 . ${VIRTUAL_ENV}/bin/activate
                                 pip install --upgrade pip
                                 pip install -r requirements.txt
                             """
                         } else {
                             bat """
-                                python -m venv ${VIRTUAL_ENV}
+                                ${PYTHON_PATH} -m venv ${VIRTUAL_ENV}
                                 call ${VIRTUAL_ENV}\\Scripts\\activate.bat
                                 pip install --upgrade pip
                                 pip install -r requirements.txt
@@ -118,7 +119,7 @@ pipeline {
                             cp requirements.txt ${DEPLOY_DIR}/
                             echo "Deployment timestamp: \$(date)" > ${DEPLOY_DIR}/version.txt
                             echo "Build number: ${BUILD_NUMBER}" >> ${DEPLOY_DIR}/version.txt
-                            python -m venv ${DEPLOY_DIR}/venv
+                            ${PYTHON_PATH} -m venv ${DEPLOY_DIR}/venv
                             . ${DEPLOY_DIR}/venv/bin/activate
                             pip install -r requirements.txt
                             cd ${DEPLOY_DIR}
@@ -132,7 +133,7 @@ pipeline {
                             copy requirements.txt ${DEPLOY_DIR}\\
                             echo Deployment timestamp: %DATE% %TIME% > ${DEPLOY_DIR}\\version.txt
                             echo Build number: ${BUILD_NUMBER} >> ${DEPLOY_DIR}\\version.txt
-                            python -m venv ${DEPLOY_DIR}\\venv
+                            ${PYTHON_PATH} -m venv ${DEPLOY_DIR}\\venv
                             call ${DEPLOY_DIR}\\venv\\Scripts\\activate.bat
                             pip install -r requirements.txt
                             cd ${DEPLOY_DIR}
