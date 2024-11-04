@@ -15,14 +15,11 @@ pipeline {
                         error "Python is not available in the PATH. Ensure Python is installed and added to PATH."
                     }
                     
-                    // Install required packages if not already available
-                    if (fileExists('requirements.txt')) {
-                        if (isUnix()) {
-                            sh "pip install --upgrade pip && pip install -r requirements.txt"
-                        } else {
-                            bat "pip install --upgrade pip && pip install -r requirements.txt"
-                        }
-                    }
+                    // Install dependencies directly
+                    sh """
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                    """
                 }
             }
         }
@@ -30,16 +27,16 @@ pipeline {
         stage('Security Scan') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh "bandit -r app.py -f html -o security-report.html && bandit -r app.py -f json -o security-report.json"
-                    } else {
-                        bat "bandit -r app.py -f html -o security-report.html && bandit -r app.py -f json -o security-report.json"
-                    }
+                    sh """
+                        bandit -r app.py -f html -o security-report.html
+                        bandit -r app.py -f json -o security-report.json
+                    """
                 }
             }
             post {
                 always {
                     archiveArtifacts artifacts: 'security-report.*', fingerprint: true
+                    
                     publishHTML([
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
@@ -56,28 +53,19 @@ pipeline {
         stage('Coverage Analysis') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh """
-                            coverage run -m pytest
-                            coverage report
-                            coverage html
-                            coverage xml
-                            coverage-badge -o coverage-badge.svg
-                        """
-                    } else {
-                        bat """
-                            coverage run -m pytest
-                            coverage report
-                            coverage html
-                            coverage xml
-                            coverage-badge -o coverage-badge.svg
-                        """
-                    }
+                    sh """
+                        coverage run -m pytest
+                        coverage report
+                        coverage html
+                        coverage xml
+                        coverage-badge -o coverage-badge.svg
+                    """
                 }
             }
             post {
                 always {
                     archiveArtifacts artifacts: 'htmlcov/**, coverage.xml, coverage-badge.svg', fingerprint: true
+                    
                     publishHTML([
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
@@ -94,27 +82,14 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh """
-                            mkdir -p ${DEPLOY_DIR}
-                            cp app.py ${DEPLOY_DIR}/
-                            cp requirements.txt ${DEPLOY_DIR}/
-                            echo "Deployment timestamp: \$(date)" > ${DEPLOY_DIR}/version.txt
-                            echo "Build number: ${BUILD_NUMBER}" >> ${DEPLOY_DIR}/version.txt
-                            cd ${DEPLOY_DIR}
-                            python -c "import app; print(app.greet('Deployment Test'))"
-                        """
-                    } else {
-                        bat """
-                            mkdir ${DEPLOY_DIR}
-                            copy app.py ${DEPLOY_DIR}\\
-                            copy requirements.txt ${DEPLOY_DIR}\\
-                            echo Deployment timestamp: %DATE% %TIME% > ${DEPLOY_DIR}\\version.txt
-                            echo Build number: ${BUILD_NUMBER} >> ${DEPLOY_DIR}\\version.txt
-                            cd ${DEPLOY_DIR}
-                            python -c "import app; print(app.greet('Deployment Test'))"
-                        """
-                    }
+                    mkdir "${DEPLOY_DIR}"
+                    sh """
+                        cp app.py ${DEPLOY_DIR}/
+                        cp requirements.txt ${DEPLOY_DIR}/
+                        echo "Deployment timestamp: \$(date)" > ${DEPLOY_DIR}/version.txt
+                        echo "Build number: ${BUILD_NUMBER}" >> ${DEPLOY_DIR}/version.txt
+                        python -c "import app; print(app.greet('Deployment Test'))"
+                    """
                 }
             }
             post {
