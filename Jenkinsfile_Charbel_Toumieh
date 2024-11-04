@@ -1,25 +1,24 @@
 pipeline {
     agent any
-    
+
     environment {
         DEPLOY_DIR = 'deployment'
     }
-    
+
     stages {
         stage('Setup') {
             steps {
                 script {
-                    // Check if python is available
-                    def pythonAvailable = sh(script: "python --version", returnStatus: true) == 0
+                    // Check if Python is available
+                    def pythonAvailable = bat(script: "python --version", returnStatus: true) == 0
                     if (!pythonAvailable) {
                         error "Python is not available in the PATH. Ensure Python is installed and added to PATH."
                     }
                     
-                    // Install dependencies directly
-                    sh """
-                        pip install --upgrade pip
-                        pip install -r requirements.txt
-                    """
+                    // Install required packages if not already available
+                    if (fileExists('requirements.txt')) {
+                        bat "pip install --upgrade pip && pip install -r requirements.txt"
+                    }
                 }
             }
         }
@@ -27,17 +26,13 @@ pipeline {
         stage('Security Scan') {
             steps {
                 script {
-                    sh """
-                        bandit -r app.py -f html -o security-report.html
-                        bandit -r app.py -f json -o security-report.json
-                    """
+                    bat "bandit -r app.py -f html -o security-report.html && bandit -r app.py -f json -o security-report.json"
                 }
             }
             post {
                 always {
                     archiveArtifacts artifacts: 'security-report.*', fingerprint: true
-                    
-                    publishHTML([
+                    publishHTML([ 
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
                         keepAll: true,
@@ -53,7 +48,7 @@ pipeline {
         stage('Coverage Analysis') {
             steps {
                 script {
-                    sh """
+                    bat """
                         coverage run -m pytest
                         coverage report
                         coverage html
@@ -65,8 +60,7 @@ pipeline {
             post {
                 always {
                     archiveArtifacts artifacts: 'htmlcov/**, coverage.xml, coverage-badge.svg', fingerprint: true
-                    
-                    publishHTML([
+                    publishHTML([ 
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
                         keepAll: true,
@@ -82,12 +76,13 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    mkdir "${DEPLOY_DIR}"
-                    sh """
-                        cp app.py ${DEPLOY_DIR}/
-                        cp requirements.txt ${DEPLOY_DIR}/
-                        echo "Deployment timestamp: \$(date)" > ${DEPLOY_DIR}/version.txt
-                        echo "Build number: ${BUILD_NUMBER}" >> ${DEPLOY_DIR}/version.txt
+                    bat """
+                        mkdir ${DEPLOY_DIR}
+                        copy app.py ${DEPLOY_DIR}\\
+                        copy requirements.txt ${DEPLOY_DIR}\\
+                        echo Deployment timestamp: %DATE% %TIME% > ${DEPLOY_DIR}\\version.txt
+                        echo Build number: ${BUILD_NUMBER} >> ${DEPLOY_DIR}\\version.txt
+                        cd ${DEPLOY_DIR}
                         python -c "import app; print(app.greet('Deployment Test'))"
                     """
                 }
@@ -99,7 +94,7 @@ pipeline {
             }
         }
     }
-    
+
     post {
         always {
             cleanWs()
