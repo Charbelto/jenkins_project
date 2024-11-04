@@ -12,14 +12,14 @@ pipeline {
             steps {
                 script {
                     // Check if Python is available
-                    def pythonAvailable = bat(script: "python --version", returnStatus: true) == 0
+                    def pythonAvailable = bat(script: "C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe --version", returnStatus: true) == 0
                     if (!pythonAvailable) {
                         error "Python is not available in the PATH. Ensure Python is installed and added to PATH."
                     }
                     
                     // Install required packages if not already available
                     if (fileExists('requirements.txt')) {
-                        bat "pip install --upgrade pip && pip install -r requirements.txt"
+                        bat "C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m pip install --upgrade pip && C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m pip install -r requirements.txt"
                     }
                 }
             }
@@ -28,7 +28,7 @@ pipeline {
         stage('Security Scan') {
             steps {
                 script {
-                    bat "bandit -r app.py -f html -o security-report.html && bandit -r app.py -f json -o security-report.json"
+                    bat "C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m bandit -r app.py -f html -o security-report.html && C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m bandit -r app.py -f json -o security-report.json"
                 }
             }
             post {
@@ -51,11 +51,11 @@ pipeline {
             steps {
                 script {
                     bat """
-                        coverage run -m pytest
-                        coverage report
-                        coverage html
-                        coverage xml
-                        coverage-badge -o coverage-badge.svg
+                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage run -m pytest
+                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage report
+                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage html
+                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage xml
+                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -m coverage-badge -o coverage-badge.svg
                     """
                 }
             }
@@ -85,7 +85,7 @@ pipeline {
                         echo Deployment timestamp: %DATE% %TIME% > ${DEPLOY_DIR}\\version.txt
                         echo Build number: ${BUILD_NUMBER} >> ${DEPLOY_DIR}\\version.txt
                         cd ${DEPLOY_DIR}
-                        python -c "import app; print(app.greet('Deployment Test'))"
+                        C:\\Users\\Admin\\AppData\\Local\\Programs\\Python\\Python311\\python.exe -c "import app; print(app.greet('Deployment Test'))"
                     """
                 }
             }
