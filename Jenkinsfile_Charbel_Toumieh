@@ -1,0 +1,142 @@
+pipeline {
+    agent any
+    
+    environment {
+        VIRTUAL_ENV = 'venv'
+        DEPLOY_DIR = 'deployment'
+    }
+    
+    stages {
+        stage('Setup') {
+            steps {
+                script {
+                    if (!fileExists("${env.WORKSPACE}/${VIRTUAL_ENV}")) {
+                        sh """
+                            python -m venv ${VIRTUAL_ENV}
+                            . ${VIRTUAL_ENV}/bin/activate
+                            pip install --upgrade pip
+                            pip install -r requirements.txt
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                script {
+                    sh """
+                        . ${VIRTUAL_ENV}/bin/activate
+                        # Run Bandit security scanner and generate HTML report
+                        bandit -r app.py -f html -o security-report.html
+                        # Also generate JSON report for potential automated analysis
+                        bandit -r app.py -f json -o security-report.json
+                    """
+                }
+            }
+            post {
+                always {
+                    // Archive security reports
+                    archiveArtifacts artifacts: 'security-report.*', fingerprint: true
+                    
+                    // Publish HTML security report
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'security-report.html',
+                        reportName: 'Security Scan Report',
+                        reportTitles: ''
+                    ])
+                }
+            }
+        }
+        
+        stage('Coverage Analysis') {
+            steps {
+                script {
+                    sh """
+                        . ${VIRTUAL_ENV}/bin/activate
+                        # Run tests with coverage
+                        coverage run -m pytest
+                        # Generate console report
+                        coverage report
+                        # Generate HTML report
+                        coverage html
+                        # Generate XML report for CI tools
+                        coverage xml
+                        # Generate badge for README
+                        coverage-badge -o coverage-badge.svg
+                    """
+                }
+            }
+            post {
+                always {
+                    // Archive coverage reports
+                    archiveArtifacts artifacts: 'htmlcov/**, coverage.xml, coverage-badge.svg', fingerprint: true
+                    
+                    // Publish HTML coverage report
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'htmlcov',
+                        reportFiles: 'index.html',
+                        reportName: 'Coverage Report',
+                        reportTitles: ''
+                    ])
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                script {
+                    // Create deployment directory
+                    sh """
+                        . ${VIRTUAL_ENV}/bin/activate
+                        
+                        # Create deployment directory
+                        mkdir -p ${DEPLOY_DIR}
+                        
+                        # Copy application files
+                        cp app.py ${DEPLOY_DIR}/
+                        cp requirements.txt ${DEPLOY_DIR}/
+                        
+                        # Create deployment version file
+                        echo "Deployment timestamp: \$(date)" > ${DEPLOY_DIR}/version.txt
+                        echo "Build number: ${BUILD_NUMBER}" >> ${DEPLOY_DIR}/version.txt
+                        
+                        # Create virtual environment in deployment directory
+                        python -m venv ${DEPLOY_DIR}/venv
+                        . ${DEPLOY_DIR}/venv/bin/activate
+                        pip install -r requirements.txt
+                        
+                        # Test deployment
+                        cd ${DEPLOY_DIR}
+                        python -c "import app; print(app.greet('Deployment Test'))"
+                    """
+                }
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: "${DEPLOY_DIR}/**", fingerprint: true
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Clean workspace after build
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}
